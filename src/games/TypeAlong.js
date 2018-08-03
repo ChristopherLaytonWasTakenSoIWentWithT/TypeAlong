@@ -1,23 +1,41 @@
 import React, { Component } from 'react';
 import DataService from '../services/Data';
+import AudioBuffer from '../services/AudioBuffer';
+import SoundPlayBack from '../services/SoundPlayBack';
 
 class TypeAlong extends Component {
     ds = new DataService();
     pressSpace=false;
+    index = 0;
     constructor(props){
         super(props);
         let first = this.ds.chooseCharacter();
+        this.context = new AudioContext();
+        this.audio = new AudioBuffer(this.context);
+        this.audio.loadAll().then(() => {
+            this.setState({loading: false});
+        });
         this.state = {
             currentCharacter: first,
             currentLetter:"",
             currentIndex: 0,
             typing: [],
-            showSpace: false
+            showSpace: false,
+            loading: true
         }
      }
 
      componentDidMount(){
          this.setState({currentLetter: this.state.currentCharacter.name[0]});
+         
+     }
+
+     playSound() {
+        let inx = this.audio.alphabet.indexOf(this.state.currentLetter.toLocaleLowerCase());
+        let newBuff = this.audio.appendBuffer(this.audio.getSoundByIndex(26), this.audio.getSoundByIndex(inx));
+        let letter = new SoundPlayBack(new AudioContext(), newBuff);
+        this.index = this.index+1;
+        letter.play();
      }
 
      keypress(e) {
@@ -63,6 +81,9 @@ class TypeAlong extends Component {
      }
 
      render() {
+         if(this.state.loading) {
+             return <p>Loading...</p>
+         }
          let list;
          let img;
          if(this.state.currentCharacter) {
@@ -90,7 +111,8 @@ class TypeAlong extends Component {
             };
             img = <img src={this.state.currentCharacter.img} style={style}/>
          } else {
-            message = <p>{`Type the letter \'${this.state.currentLetter.toLocaleUpperCase()}\'`}</p>
+            message = <p>{`Press the letter \'${this.state.currentLetter.toLocaleUpperCase()}\'`}</p>
+            this.playSound();
          }
          return (
              <div tabIndex="0" onKeyDown={(e) => this.keypress(e)}>
